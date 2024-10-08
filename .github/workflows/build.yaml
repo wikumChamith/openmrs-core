@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version --file pom.xml
       - name: Build with Maven
-        run: mvn clean install --batch-mode && mvn test -DtestDb=mysql -Pskip-default-test -Pintegration-test --batch-mode --file pom.xml
+        run: mvn clean install -DuseInMemoryDatabase=false --batch-mode && mvn test -DuseInMemoryDatabase=false -Pskip-default-test -Pintegration-test --batch-mode --file pom.xml
       # this is necessary to populate the environment variables for Coveralls properly
       - name: Set branch name and PR number
         id: refs
