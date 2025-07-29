@@ -57,6 +57,7 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
@@ -904,7 +905,7 @@ public class ServiceContext implements ApplicationContextAware {
 			return applicationContext.getBean(beanName, type);
 		}
 		catch (BeansException beanException) {
-			throw new APIException("service.error.during.getting.component", null, beanException);
+			throw new APIException("Error during getting registered component", beanException);
 		}
 	}
 	
@@ -1048,5 +1049,15 @@ public class ServiceContext implements ApplicationContextAware {
 	 */
 	public void setDatatypeService(DatatypeService datatypeService) {
 		setService(DatatypeService.class, datatypeService);
+	}
+
+	/**
+	 * Clears entire API cache.
+	 * 
+	 * @since 2.8.0
+	 */
+	public void clearEntireApiCache() {
+		CacheManager apiCacheManager = getRegisteredComponent("apiCacheManager", CacheManager.class);
+		apiCacheManager.getCacheNames().forEach(cacheName -> apiCacheManager.getCache(cacheName).invalidate());
 	}
 }

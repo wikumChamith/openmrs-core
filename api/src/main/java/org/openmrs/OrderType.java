@@ -17,19 +17,19 @@ import org.openmrs.annotation.Independent;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -170,7 +170,7 @@ public class OrderType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @return Get the {@link ConceptClass}es
 	 */
-	public Set<ConceptClass> getConceptClasses() {
+	public Collection<ConceptClass> getConceptClasses() {
 		if (conceptClasses == null) {
 			conceptClasses = new LinkedHashSet<>();
 		}
@@ -180,8 +180,8 @@ public class OrderType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @param conceptClasses the collection containing the {@link ConceptClass}es
 	 */
-	public void setConceptClasses(Set<ConceptClass> conceptClasses) {
-		this.conceptClasses = conceptClasses;
+	public void setConceptClasses(Collection<ConceptClass> conceptClasses) {
+		this.conceptClasses = (Set<ConceptClass>)conceptClasses;
 	}
 	
 	/**

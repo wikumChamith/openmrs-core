@@ -17,6 +17,7 @@ import org.openmrs.Person;
 import org.openmrs.Provider;
 import org.openmrs.ProviderAttribute;
 import org.openmrs.ProviderAttributeType;
+import org.openmrs.ProviderRole;
 import org.openmrs.annotation.Authorized;
 import org.openmrs.annotation.Handler;
 import org.openmrs.util.PrivilegeConstants;
@@ -331,4 +332,32 @@ public interface ProviderService extends OpenmrsService {
 	 */
 	@Authorized( { PrivilegeConstants.GET_PROVIDERS })
 	public Provider getUnknownProvider();
+
+	/**
+	 * Get a {@link ProviderRole} by its ID
+	 * @param providerRoleId
+	 * @return {@link ProviderRole}
+	 * @since 2.8.0
+	 */
+	@Authorized( { PrivilegeConstants.GET_PROVIDERS })
+	ProviderRole getProviderRole(Integer providerRoleId);
+
+	/**
+	 * Get a {@link ProviderRole} by its UUID
+	 * @param uuid The ProviderRole UUID
+	 * @return {@link ProviderRole}
+	 * @since 2.8.0
+	 */
+	@Authorized( { PrivilegeConstants.GET_PROVIDERS })
+	ProviderRole getProviderRoleByUuid(String uuid);
+
+	/**
+	 * Get providers for given roles
+	 * @param roles The list of {@link ProviderRole}
+	 * @return a list of matching {@link Provider} instances
+	 * @since 2.8.0
+	 */
+	@Authorized( { PrivilegeConstants.GET_PROVIDERS })
+	List<Provider> getProvidersByRoles(List<ProviderRole> roles);
+	
 }
