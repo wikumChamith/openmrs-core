@@ -16,14 +16,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.DocumentId;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.type.SqlTypes;
 
 /**
  * PatientIdentifierType
@@ -79,8 +81,7 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 	// Fields
 	@DocumentId
 	@Id
-	@GeneratedValue(generator = "native")
-	@GenericGenerator(name = "native", strategy = "native")
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "patient_identifier_type_id")
 	private Integer patientIdentifierTypeId;
 
@@ -98,10 +99,12 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 	private String validator;
 
 	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.VARCHAR)
 	@Column(name = "location_behavior", length = 50)
 	private LocationBehavior locationBehavior;
 
 	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.VARCHAR)
 	@Column(name = "uniqueness_behavior", length = 50)
 	private UniquenessBehavior uniquenessBehavior;
 	

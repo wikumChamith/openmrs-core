@@ -24,6 +24,8 @@ import org.openmrs.Cohort;
 import org.openmrs.CohortMembership;
 import org.openmrs.api.db.CohortDAO;
 import org.openmrs.api.db.DAOException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 /**
  * Hibernate implementation of the CohortDAO
@@ -32,17 +34,15 @@ import org.openmrs.api.db.DAOException;
  * @see org.openmrs.api.context.Context
  * @see org.openmrs.api.CohortService
  */
+@Repository("cohortDAO")
 public class HibernateCohortDAO implements CohortDAO {
 	
 	private static final String VOIDED = "voided";
-	private SessionFactory sessionFactory;
 	
-	/**
-	 * Auto generated method comment
-	 *
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	private final SessionFactory sessionFactory;
+	
+	@Autowired
+	public HibernateCohortDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 	
@@ -108,7 +108,7 @@ public class HibernateCohortDAO implements CohortDAO {
 	 */
 	@Override
 	public Cohort deleteCohort(Cohort cohort) throws DAOException {
-		sessionFactory.getCurrentSession().delete(cohort);
+		sessionFactory.getCurrentSession().remove(cohort);
 		return null;
 	}
 
@@ -168,8 +168,7 @@ public class HibernateCohortDAO implements CohortDAO {
 	 */
 	@Override
 	public Cohort saveCohort(Cohort cohort) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(cohort);
-		return cohort;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), cohort);
 	}
 
 	@Override
@@ -203,7 +202,6 @@ public class HibernateCohortDAO implements CohortDAO {
 	
 	@Override
 	public CohortMembership saveCohortMembership(CohortMembership cohortMembership) {
-		sessionFactory.getCurrentSession().saveOrUpdate(cohortMembership);
-		return cohortMembership;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), cohortMembership);
 	}
 }

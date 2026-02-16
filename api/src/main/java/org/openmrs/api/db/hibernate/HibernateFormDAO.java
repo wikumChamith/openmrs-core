@@ -41,6 +41,8 @@ import org.openmrs.api.db.FormDAO;
 import org.openmrs.util.OpenmrsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 /**
  * Hibernate-specific Form-related functions. This class should not be used directly. All calls
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
  * @see org.openmrs.api.db.FormDAO
  * @see org.openmrs.api.FormService
  */
+@Repository("formDAO")
 public class HibernateFormDAO implements FormDAO {
 	
 	private static final Logger log = LoggerFactory.getLogger(HibernateFormDAO.class);
@@ -56,14 +59,10 @@ public class HibernateFormDAO implements FormDAO {
 	/**
 	 * Hibernate session factory
 	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	/**
-	 * Set session factory
-	 *
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernateFormDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 	
@@ -74,8 +73,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public Form saveForm(Form form) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(form);
-		return form;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), form);
 	}
 	
 	/**
@@ -83,6 +81,8 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public Form duplicateForm(Form form) throws DAOException {
+		// Use merge instead of persist because the form's FormFields may contain
+		// detached proxy references after Context.clearSession() was called
 		return (Form) sessionFactory.getCurrentSession().merge(form);
 	}
 	
@@ -91,7 +91,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public void deleteForm(Form form) throws DAOException {
-		sessionFactory.getCurrentSession().delete(form);
+		sessionFactory.getCurrentSession().remove(form);
 	}
 	
 	/**
@@ -301,8 +301,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public Field saveField(Field field) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(field);
-		return field;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), field);
 	}
 	
 	/**
@@ -311,7 +310,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public void deleteField(Field field) throws DAOException {
-		sessionFactory.getCurrentSession().delete(field);
+		sessionFactory.getCurrentSession().remove(field);
 	}
 	
 	/**
@@ -319,8 +318,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public FormField saveFormField(FormField formField) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(formField);
-		return formField;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), formField);
 	}
 	
 	/**
@@ -329,7 +327,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public void deleteFormField(FormField formField) throws DAOException {
-		sessionFactory.getCurrentSession().delete(formField);
+		sessionFactory.getCurrentSession().remove(formField);
 	}
 	
 	/**
@@ -528,6 +526,7 @@ public class HibernateFormDAO implements FormDAO {
 			for (FormField ff : containingAllFormFields) {
 				allFormFieldIds.add(ff.getFormFieldId());
 			}
+			// Use a correlated subquery to count matching form fields for each form
 			Subquery<Long> subquery = cq.subquery(Long.class);
 			Root<FormField> subqueryRoot = subquery.from(FormField.class);
 
@@ -536,7 +535,7 @@ public class HibernateFormDAO implements FormDAO {
 				cb.equal(subqueryRoot.get("form").get("formId"), root.get("formId")),
 				subqueryRoot.get("formFieldId").in(allFormFieldIds)
 			);
-			predicates.add(cb.equal(cb.literal((long) containingAllFormFields.size()), subquery.getSelection()));
+			predicates.add(cb.equal(cb.literal((long) containingAllFormFields.size()), subquery));
 		}
 
 		// get all forms (dupes included) that have this field on them
@@ -624,7 +623,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public void deleteFieldType(FieldType fieldType) throws DAOException {
-		sessionFactory.getCurrentSession().delete(fieldType);
+		sessionFactory.getCurrentSession().remove(fieldType);
 	}
 	
 	/**
@@ -632,8 +631,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public FieldType saveFieldType(FieldType fieldType) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(fieldType);
-		return fieldType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), fieldType);
 	}
 	
 	/**
@@ -687,8 +685,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public FormResource saveFormResource(FormResource formResource) {
-		sessionFactory.getCurrentSession().saveOrUpdate(formResource);
-		return formResource;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), formResource);
 	}
 	
 	/**
@@ -696,7 +693,7 @@ public class HibernateFormDAO implements FormDAO {
 	 */
 	@Override
 	public void deleteFormResource(FormResource formResource) {
-		sessionFactory.getCurrentSession().delete(formResource);
+		sessionFactory.getCurrentSession().remove(formResource);
 	}
 	
 	/**

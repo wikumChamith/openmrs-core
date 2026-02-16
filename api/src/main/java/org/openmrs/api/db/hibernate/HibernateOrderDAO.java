@@ -56,6 +56,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 /**
  * This class should not be used directly. This is just a common implementation of the OrderDAO that
@@ -68,6 +70,7 @@ import java.util.Set;
  * @see org.openmrs.api.OrderService
  * @see org.openmrs.api.db.OrderDAO
  */
+@Repository("orderDAO")
 public class HibernateOrderDAO implements OrderDAO {
 	
 	private static final Logger log = LoggerFactory.getLogger(HibernateOrderDAO.class);
@@ -75,17 +78,10 @@ public class HibernateOrderDAO implements OrderDAO {
 	/**
 	 * Hibernate session factory
 	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	public HibernateOrderDAO() {
-	}
-	
-	/**
-	 * Set session factory
-	 * 
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernateOrderDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 	
@@ -95,9 +91,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public Order saveOrder(Order order) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(order);
-		
-		return order;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), order);
 	}
 	
 	/**
@@ -106,7 +100,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public void deleteOrder(Order order) throws DAOException {
-		sessionFactory.getCurrentSession().delete(order);
+		sessionFactory.getCurrentSession().remove(order);
 	}
 	
 	/**
@@ -372,8 +366,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public OrderGroup saveOrderGroup(OrderGroup orderGroup) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderGroup);
-		return orderGroup;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderGroup);
 	}
 	
 	/**
@@ -449,7 +442,7 @@ public class HibernateOrderDAO implements OrderDAO {
 		
 		globalProperty.setPropertyValue(String.valueOf(gpNumericValue + 1));
 		
-		sessionFactory.getCurrentSession().save(globalProperty);
+		sessionFactory.getCurrentSession().persist(globalProperty);
 		
 		return gpNumericValue;
 	}
@@ -667,8 +660,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public OrderFrequency saveOrderFrequency(OrderFrequency orderFrequency) {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderFrequency);
-		return orderFrequency;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderFrequency);
 	}
 	
 	/**
@@ -676,7 +668,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public void purgeOrderFrequency(OrderFrequency orderFrequency) {
-		sessionFactory.getCurrentSession().delete(orderFrequency);
+		sessionFactory.getCurrentSession().remove(orderFrequency);
 	}
 	
 	/**
@@ -782,14 +774,38 @@ public class HibernateOrderDAO implements OrderDAO {
 		    "from OrderType where :conceptClass in elements(conceptClasses)").setParameter("conceptClass", conceptClass)
 		        .uniqueResult();
 	}
+
+	/**
+	 * @see org.openmrs.api.OrderService#getOrderTypesByClassName(String, boolean)
+	 */
+	@Override
+	public List<OrderType> getOrderTypesByClassName(String javaClassName, boolean includeRetired) throws DAOException {
+		if (StringUtils.isBlank(javaClassName)) {
+			throw new APIException("javaClassName cannot be null");
+		}
+		
+		Session session = sessionFactory.getCurrentSession();
+		CriteriaBuilder cb = session.getCriteriaBuilder();
+		CriteriaQuery<OrderType> cq = cb.createQuery(OrderType.class);
+		Root<OrderType> root = cq.from(OrderType.class);
+
+		List<Predicate> predicates = new ArrayList<>();
+		if (!includeRetired) {
+			predicates.add(cb.isFalse(root.get("retired")));
+		}
+		predicates.add(cb.equal(root.get("javaClassName"), javaClassName));
+		
+		cq.where(predicates.toArray(new Predicate[]{}));
+		
+		return session.createQuery(cq).getResultList();
+	}
 	
 	/**
 	 * @see org.openmrs.api.OrderService#saveOrderType(org.openmrs.OrderType)
 	 */
 	@Override
 	public OrderType saveOrderType(OrderType orderType) {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderType);
-		return orderType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderType);
 	}
 	
 	/**
@@ -797,7 +813,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public void purgeOrderType(OrderType orderType) {
-		sessionFactory.getCurrentSession().delete(orderType);
+		sessionFactory.getCurrentSession().remove(orderType);
 	}
 	
 	/**
@@ -905,8 +921,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public OrderGroupAttributeType saveOrderGroupAttributeType(OrderGroupAttributeType orderGroupAttributeType)throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderGroupAttributeType);
-		return orderGroupAttributeType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderGroupAttributeType);
 	}
 	
 	/**
@@ -914,7 +929,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public void deleteOrderGroupAttributeType(OrderGroupAttributeType orderGroupAttributeType) throws DAOException{
-		sessionFactory.getCurrentSession().delete(orderGroupAttributeType);
+		sessionFactory.getCurrentSession().remove(orderGroupAttributeType);
 	}
 
 	/**
@@ -987,8 +1002,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public OrderAttributeType saveOrderAttributeType(OrderAttributeType orderAttributeType) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderAttributeType);
-		return orderAttributeType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderAttributeType);
 	}
 
 	/**
@@ -997,7 +1011,7 @@ public class HibernateOrderDAO implements OrderDAO {
 	 */
 	@Override
 	public void deleteOrderAttributeType(OrderAttributeType orderAttributeType) throws DAOException {
-		sessionFactory.getCurrentSession().delete(orderAttributeType);
+		sessionFactory.getCurrentSession().remove(orderAttributeType);
 	}
 
 	/**

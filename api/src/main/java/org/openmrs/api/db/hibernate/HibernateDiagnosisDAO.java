@@ -9,6 +9,7 @@
  */
 package org.openmrs.api.db.hibernate;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -23,12 +24,15 @@ import org.openmrs.Patient;
 import org.openmrs.Visit;
 import org.openmrs.api.db.DAOException;
 import org.openmrs.api.db.DiagnosisDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 
 /**
@@ -38,26 +42,23 @@ import jakarta.persistence.criteria.CriteriaQuery;
  * @see org.openmrs.api.DiagnosisService
  *
  */
+@Repository("diagnosisDAO")
 public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	
 	/**
 	 * Hibernate session factory
 	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
+	
+	@Autowired
+	public HibernateDiagnosisDAO(SessionFactory sessionFactory) {
+		this.sessionFactory = sessionFactory;
+	}
 
 	/**
 	 * The rank for a primary diagnosis
 	 */
 	private static final Integer PRIMARY_RANK = 1;
-
-	/**
-	 * Set session factory
-	 *
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
-		this.sessionFactory = sessionFactory;
-	}
 
 	/**
 	 * Saves the diagnosis.
@@ -67,8 +68,7 @@ public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	 */
 	@Override
 	public Diagnosis saveDiagnosis(Diagnosis diagnosis) {
-		sessionFactory.getCurrentSession().saveOrUpdate(diagnosis);
-		return diagnosis;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), diagnosis);
 	}
 
 	/**
@@ -77,22 +77,25 @@ public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	 * @param patient the patient whose active diagnoses are being queried.
 	 * @return all active diagnoses associated with the specified patient.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<Diagnosis> getActiveDiagnoses(Patient patient, Date fromDate) {
-		String fromDateCriteria = "";
-		if(fromDate != null){
-			fromDateCriteria = " and d.dateCreated >= :fromDate ";
+		Session session = sessionFactory.getCurrentSession();
+		CriteriaBuilder cb = session.getCriteriaBuilder();
+		CriteriaQuery<Diagnosis> cq = cb.createQuery(Diagnosis.class);
+		Root<Diagnosis> root = cq.from(Diagnosis.class);
+
+		List<Predicate> predicates = new ArrayList<>();
+		predicates.add(cb.equal(root.get("patient").get("patientId"), patient.getId()));
+		predicates.add(cb.isFalse(root.get("voided")));
+
+		if (fromDate != null) {
+			predicates.add(cb.greaterThanOrEqualTo(root.get("dateCreated"), fromDate));
 		}
-		Query query = sessionFactory.getCurrentSession().createQuery(
-			"from Diagnosis d where d.patient.patientId = :patientId and d.voided = false " 
-				+ fromDateCriteria  
-				+ " order by d.dateCreated desc");
-		query.setParameter("patientId", patient.getId());
-		if(fromDate != null){
-			query.setParameter("fromDate", fromDate);
-		}
-		return query.getResultList();
+
+		cq.where(predicates.toArray(new Predicate[0]));
+		cq.orderBy(cb.desc(root.get("dateCreated")));
+
+		return session.createQuery(cq).getResultList();
 	}
 
 	/**
@@ -173,7 +176,7 @@ public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	 */
 	@Override
 	public void deleteDiagnosis(Diagnosis diagnosis) throws DAOException{
-		sessionFactory.getCurrentSession().delete(diagnosis);
+		sessionFactory.getCurrentSession().remove(diagnosis);
 	}
 
 	/**
@@ -214,8 +217,7 @@ public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	@Override
 	@Transactional
 	public DiagnosisAttributeType saveDiagnosisAttributeType(DiagnosisAttributeType diagnosisAttributeType) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(diagnosisAttributeType);
-		return diagnosisAttributeType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), diagnosisAttributeType);
 	}
 
 	/**
@@ -224,7 +226,7 @@ public class HibernateDiagnosisDAO implements DiagnosisDAO {
 	@Override
 	@Transactional
 	public void deleteDiagnosisAttributeType(DiagnosisAttributeType diagnosisAttributeType) throws DAOException {
-		sessionFactory.getCurrentSession().delete(diagnosisAttributeType);
+		sessionFactory.getCurrentSession().remove(diagnosisAttributeType);
 	}
 
 	/**

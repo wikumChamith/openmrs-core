@@ -10,7 +10,12 @@
 package org.openmrs;
 
 import jakarta.persistence.Cacheable;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.envers.Audited;
@@ -18,9 +23,11 @@ import org.hibernate.envers.Audited;
 /**
  * ConceptDatatype
  */
+@Entity
+@Table(name = "concept_datatype")
 @Audited
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class ConceptDatatype extends BaseChangeableOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 473L;
@@ -70,8 +77,12 @@ public class ConceptDatatype extends BaseChangeableOpenmrsMetadata {
 	public static final String COMPLEX_UUID = "8d4a6242-c2cc-11de-8d13-0010c6dffd0f";
 	
 	// Fields
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "concept_datatype_id", nullable = false)
 	private Integer conceptDatatypeId;
 	
+	@Column(name = "hl7_abbreviation", length = 3)
 	private String hl7Abbreviation;
 	
 	// Constructors

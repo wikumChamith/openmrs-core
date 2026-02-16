@@ -21,6 +21,7 @@ import org.openmrs.test.jupiter.BaseContextSensitiveTest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Tests the {@link ConceptNumeric} object
@@ -119,11 +120,13 @@ public class ConceptNumericTest extends BaseContextSensitiveTest {
 	 */
 	@Test
 	public void shouldSaveAConceptNumericWithAllowDecimalValue() {
-		Concept c = Context.getConceptService().getConcept(22);
-		ConceptNumeric cn = new ConceptNumeric(c);
+		ConceptNumeric cn = new ConceptNumeric(22);
+		cn.addName(new ConceptName("cn", Locale.ENGLISH));
+		cn.setDatatype(new ConceptDatatype(1));
+		cn.setConceptClass(new ConceptClass(1));
 		cn.addDescription(new ConceptDescription("some description", null));
-		
-		Context.getConceptService().saveConcept(cn);
+
+		cn = (ConceptNumeric) Context.getConceptService().saveConcept(cn);
 		assertFalse(Context.getConceptService().getConceptNumeric(22).getAllowDecimal());
 		
 		cn.setAllowDecimal(true);
@@ -133,21 +136,21 @@ public class ConceptNumericTest extends BaseContextSensitiveTest {
 
 	@Test
 	public void shouldRemoveReferenceRangeFromConceptNumeric() {
-		Concept c = Context.getConceptService().getConcept(22);
-		ConceptNumeric cn = new ConceptNumeric(c);
+		ConceptNumeric cn = new ConceptNumeric(22);
+		cn.addName(new ConceptName("cn", Locale.ENGLISH));
+		cn.setDatatype(new ConceptDatatype(1));
+		cn.setConceptClass(new ConceptClass(1));
 		ConceptReferenceRange referenceRange1 = new ConceptReferenceRange();
-		referenceRange1.setId(1);
 		referenceRange1.setConceptNumeric(cn);
 		ConceptReferenceRange referenceRange2 = new ConceptReferenceRange();
-		referenceRange2.setId(2);
 		referenceRange2.setConceptNumeric(cn);
 		cn.addReferenceRange(referenceRange1);
 		cn.addReferenceRange(referenceRange2);
-
-		Context.getConceptService().saveConcept(cn);
+		
+		cn = (ConceptNumeric) Context.getConceptService().saveConcept(cn);
 		assertEquals(2, Context.getConceptService().getConceptNumeric(22).getReferenceRanges().size());
 
-		cn.removeReferenceRange(referenceRange1);
+		cn.removeReferenceRange(cn.getReferenceRanges().iterator().next());
 		Context.getConceptService().saveConcept(cn);
 		assertEquals(1, Context.getConceptService().getConceptNumeric(22).getReferenceRanges().size());
 	}

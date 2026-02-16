@@ -17,27 +17,21 @@ import org.openmrs.api.db.TemplateDAO;
 import org.openmrs.notification.Template;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
+@Repository("templateDAO")
 public class HibernateTemplateDAO implements TemplateDAO {
 	
 	private static final Logger log = LoggerFactory.getLogger(HibernateTemplateDAO.class);
 	
-	/**
-	 * Hibernate session factory
-	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	public HibernateTemplateDAO() {
-	}
-	
-	/**
-	 * Set session factory
-	 * 
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernateTemplateDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
+	
 	
 	@Override
 	@SuppressWarnings("unchecked")
@@ -62,7 +56,7 @@ public class HibernateTemplateDAO implements TemplateDAO {
 	
 	@Override
 	public void createTemplate(Template template) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(template);
+		HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), template);
 	}
 	
 	@Override
@@ -70,14 +64,13 @@ public class HibernateTemplateDAO implements TemplateDAO {
 		if (template.getId() == null) {
 			createTemplate(template);
 		} else {
-			template = (Template) sessionFactory.getCurrentSession().merge(template);
-			sessionFactory.getCurrentSession().saveOrUpdate(template);
+			HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), template);
 		}
 	}
 	
 	@Override
 	public void deleteTemplate(Template template) throws DAOException {
-		sessionFactory.getCurrentSession().delete(template);
+		sessionFactory.getCurrentSession().remove(template);
 	}
 	
 }

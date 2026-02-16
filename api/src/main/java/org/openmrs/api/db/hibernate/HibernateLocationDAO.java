@@ -31,21 +31,22 @@ import org.openmrs.LocationAttributeType;
 import org.openmrs.LocationTag;
 import org.openmrs.api.db.DAOException;
 import org.openmrs.api.db.LocationDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 /**
  * Hibernate location-related database functions
  */
+@Repository("locationDAO")
 public class HibernateLocationDAO implements LocationDAO {
 	
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	/**
-	 * @see org.openmrs.api.db.LocationDAO#setSessionFactory(org.hibernate.SessionFactory)
-	 */
-	@Override
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernateLocationDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
+	
 	
 	/**
 	 * @see org.openmrs.api.db.LocationDAO#saveLocation(org.openmrs.Location)
@@ -63,8 +64,7 @@ public class HibernateLocationDAO implements LocationDAO {
 			}
 		}
 		
-		sessionFactory.getCurrentSession().saveOrUpdate(location);
-		return location;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), location);
 	}
 	
 	/**
@@ -122,7 +122,7 @@ public class HibernateLocationDAO implements LocationDAO {
 	 */
 	@Override
 	public void deleteLocation(Location location) {
-		sessionFactory.getCurrentSession().delete(location);
+		sessionFactory.getCurrentSession().remove(location);
 	}
 	
 	/**
@@ -130,8 +130,7 @@ public class HibernateLocationDAO implements LocationDAO {
 	 */
 	@Override
 	public LocationTag saveLocationTag(LocationTag tag) {
-		sessionFactory.getCurrentSession().saveOrUpdate(tag);
-		return tag;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), tag);
 	}
 	
 	/**
@@ -201,7 +200,7 @@ public class HibernateLocationDAO implements LocationDAO {
 	 */
 	@Override
 	public void deleteLocationTag(LocationTag tag) {
-		sessionFactory.getCurrentSession().delete(tag);
+		sessionFactory.getCurrentSession().remove(tag);
 	}
 	
 	/**
@@ -351,8 +350,7 @@ public class HibernateLocationDAO implements LocationDAO {
 	 */
 	@Override
 	public LocationAttributeType saveLocationAttributeType(LocationAttributeType locationAttributeType) {
-		sessionFactory.getCurrentSession().saveOrUpdate(locationAttributeType);
-		return locationAttributeType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), locationAttributeType);
 	}
 	
 	/**
@@ -360,7 +358,7 @@ public class HibernateLocationDAO implements LocationDAO {
 	 */
 	@Override
 	public void deleteLocationAttributeType(LocationAttributeType locationAttributeType) {
-		sessionFactory.getCurrentSession().delete(locationAttributeType);
+		sessionFactory.getCurrentSession().remove(locationAttributeType);
 	}
 	
 	/**

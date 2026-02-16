@@ -59,6 +59,8 @@ import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 /**
  * Hibernate specific database methods for the PatientService
@@ -67,6 +69,7 @@ import org.slf4j.LoggerFactory;
  * @see org.openmrs.api.db.PatientDAO
  * @see org.openmrs.api.PatientService
  */
+@Repository("patientDAO")
 public class HibernatePatientDAO implements PatientDAO {
 	
 	private static final Logger log = LoggerFactory.getLogger(HibernatePatientDAO.class);
@@ -74,23 +77,16 @@ public class HibernatePatientDAO implements PatientDAO {
 	/**
 	 * Hibernate session factory
 	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	private SearchSessionFactory searchSessionFactory;
+	private final SearchSessionFactory searchSessionFactory;
 	
-	/**
-	 * Set session factory
-	 *
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernatePatientDAO(SessionFactory sessionFactory, SearchSessionFactory searchSessionFactory) {
 		this.sessionFactory = sessionFactory;
-	}
-
-	public void setSearchSessionFactory(SearchSessionFactory searchSessionFactory) {
 		this.searchSessionFactory = searchSessionFactory;
 	}
-
+	
 	/**
      * @param patientId  internal patient identifier
      * @return           patient with given internal identifier
@@ -108,12 +104,12 @@ public class HibernatePatientDAO implements PatientDAO {
 	 */
         @Override
 	public Patient savePatient(Patient patient) throws DAOException {
+		Session session = sessionFactory.getCurrentSession();
 		if (patient.getPatientId() == null) {
 			// if we're saving a new patient, just do the normal thing
 			// and rows in the person and patient table will be created by
 			// hibernate
-			sessionFactory.getCurrentSession().saveOrUpdate(patient);
-			return patient;
+			return HibernateUtil.saveOrUpdate(session, patient);
 		} else {
 			// if we're updating a patient, its possible that a person
 			// row exists but a patient row does not. hibernate does not deal
@@ -123,14 +119,20 @@ public class HibernatePatientDAO implements PatientDAO {
 			// Check to make sure we have a row in the patient table already.
 			// If we don't have a row, create it so Hibernate doesn't bung
 			// things up
-			insertPatientStubIfNeeded(patient);
+			boolean wasStubInserted = insertPatientStubIfNeeded(patient);
 			
-			// Note: A merge might be necessary here because hibernate thinks that Patients
-			// and Persons are the same objects.  So it sees a Person object in the
-			// cache and claims it is a duplicate of this Patient object.
-			sessionFactory.getCurrentSession().saveOrUpdate(patient);
+			if (wasStubInserted) {
+				// This is a Person→Patient promotion. The session was already contaminated
+				// with a Person entity that's been evicted. In Hibernate 7, the orphaned
+				// PersistentSet CollectionEntry references cause merge failures.
+				// Flush pending changes and clear the session, then merge cleanly.
+				session.flush();
+				session.clear();
+				return (Patient) session.merge(patient);
+			}
 			
-			return patient;
+			// Normal patient update - use standard saveOrUpdate
+			return HibernateUtil.saveOrUpdate(session, patient);
 		}
 	}
 	
@@ -140,7 +142,7 @@ public class HibernatePatientDAO implements PatientDAO {
 	 *
 	 * @param patient
 	 */
-	private void insertPatientStubIfNeeded(Patient patient) {
+	private boolean insertPatientStubIfNeeded(Patient patient) {
 		
 		boolean stubInsertNeeded = false;
 		
@@ -180,6 +182,7 @@ public class HibernatePatientDAO implements PatientDAO {
 			sessionFactory.getCurrentSession().evict(person);
 		}
 		
+		return stubInsertNeeded;
 	}
 	
 	public List<Patient> getPatients(String query, List<PatientIdentifierType> identifierTypes,
@@ -261,7 +264,7 @@ public class HibernatePatientDAO implements PatientDAO {
 	 */
         @Override
 	public void deletePatientIdentifierType(PatientIdentifierType patientIdentifierType) throws DAOException {
-		sessionFactory.getCurrentSession().delete(patientIdentifierType);
+		sessionFactory.getCurrentSession().remove(patientIdentifierType);
 	}
 
 	/**
@@ -313,8 +316,7 @@ public class HibernatePatientDAO implements PatientDAO {
 	 */
         @Override
 	public PatientIdentifierType savePatientIdentifierType(PatientIdentifierType patientIdentifierType) throws DAOException {
-		sessionFactory.getCurrentSession().saveOrUpdate(patientIdentifierType);
-		return patientIdentifierType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), patientIdentifierType);
 	}
 	
 	/**
@@ -709,8 +711,7 @@ public class HibernatePatientDAO implements PatientDAO {
         @Override
 	public PatientIdentifier savePatientIdentifier(PatientIdentifier patientIdentifier) {
 		
-		sessionFactory.getCurrentSession().saveOrUpdate(patientIdentifier);
-		return patientIdentifier;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), patientIdentifier);
 		
 	}
 	
@@ -721,7 +722,7 @@ public class HibernatePatientDAO implements PatientDAO {
         @Override
 	public void deletePatientIdentifier(PatientIdentifier patientIdentifier) throws DAOException {
 		
-		sessionFactory.getCurrentSession().delete(patientIdentifier);
+		sessionFactory.getCurrentSession().remove(patientIdentifier);
 		
 	}
 	
@@ -798,6 +799,7 @@ public class HibernatePatientDAO implements PatientDAO {
 			}
 			b.filter(f.terms().field("identifierType.patientIdentifierTypeId").matchingAny(identifierTypeIds));
 			b.filter(f.match().field("patient.isPatient").matching(true));
+			b.filter(f.match().field("voided").matching(false));
 		}).toPredicate(), "patient.personId", PatientIdentifier::getPatient), tmpStart, tmpLength);
 	}
 	
@@ -987,7 +989,7 @@ public class HibernatePatientDAO implements PatientDAO {
 			    .executeUpdate();
 		
 		for (Allergy allergy : allergies) {
-			sessionFactory.getCurrentSession().save(allergy);
+			sessionFactory.getCurrentSession().persist(allergy);
 		}
 			
 		return allergies;
@@ -1020,7 +1022,7 @@ public class HibernatePatientDAO implements PatientDAO {
      */
     @Override
     public Allergy saveAllergy(Allergy allergy) {
-    	sessionFactory.getCurrentSession().save(allergy);
+    	sessionFactory.getCurrentSession().persist(allergy);
     	return allergy;
     }
 

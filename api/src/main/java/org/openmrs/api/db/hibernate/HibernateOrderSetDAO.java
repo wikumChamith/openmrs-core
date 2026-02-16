@@ -23,6 +23,10 @@ import org.openmrs.OrderSetMember;
 import org.openmrs.api.db.DAOException;
 import org.openmrs.api.db.OrderSetDAO;
 
+import org.openmrs.api.db.OrderSetDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
 /**
  * This class should not be used directly. This is just a common implementation of the OrderSetDAO that
  * is used by the OrderSetService. This class is injected by spring into the desired OrderSetService
@@ -35,22 +39,13 @@ import org.openmrs.api.db.OrderSetDAO;
  * @see org.openmrs.api.db.OrderSetDAO
  * @since 1.12
  */
+@Repository("orderSetDAO")
 public class HibernateOrderSetDAO implements OrderSetDAO {
 	
-	/**
-	 * Hibernate session factory
-	 */
-	private SessionFactory sessionFactory;
+	private final SessionFactory sessionFactory;
 	
-	public HibernateOrderSetDAO() {
-	}
-	
-	/**
-	 * Set session factory
-	 *
-	 * @param sessionFactory
-	 */
-	public void setSessionFactory(SessionFactory sessionFactory) {
+	@Autowired
+	public HibernateOrderSetDAO(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}
 	
@@ -60,8 +55,7 @@ public class HibernateOrderSetDAO implements OrderSetDAO {
 	@Override
 	public OrderSet save(OrderSet orderSet) throws DAOException {
 		Session session = sessionFactory.getCurrentSession();
-		session.saveOrUpdate(orderSet);
-		return orderSet;
+		return HibernateUtil.saveOrUpdate(session, orderSet);
 	}
 	
 	/**
@@ -141,8 +135,7 @@ public class HibernateOrderSetDAO implements OrderSetDAO {
 	 */
 	@Override
 	public OrderSetAttributeType saveOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType) {
-		sessionFactory.getCurrentSession().saveOrUpdate(orderSetAttributeType);
-		return orderSetAttributeType;
+		return HibernateUtil.saveOrUpdate(sessionFactory.getCurrentSession(), orderSetAttributeType);
 	}
 
 	/**
@@ -150,7 +143,7 @@ public class HibernateOrderSetDAO implements OrderSetDAO {
 	 */
 	@Override
 	public void deleteOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType) {
-		sessionFactory.getCurrentSession().delete(orderSetAttributeType);
+		sessionFactory.getCurrentSession().remove(orderSetAttributeType);
 	}
 
 	/**
