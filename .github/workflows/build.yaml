@@ -11,7 +11,9 @@ on:
       - master
   workflow_dispatch:
 
-permissions: read-all
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build:
@@ -58,14 +60,15 @@ jobs:
         run: |
           echo "branch_name=${BRANCH_NAME_OR_REF#refs/heads/}" >> $GITHUB_OUTPUT
           echo "pr_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")" >> $GITHUB_OUTPUT
-      - name: Update coverage data
-        # only send coverage data for Java 21
-        if: ${{  matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-latest' && steps.refs.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          CI_NAME: Github
-          CI_BUILD_NUMBER: ${{ github.run_id }}
-          CI_BUILD_URL: https://github.com/${{ github.repository }}/commit/${{ github.event.after }}/checks
-          CI_BRANCH: ${{ steps.refs.outputs.branch_name }}
-          CI_PULL_REQUEST: ${{ steps.refs.outputs.pr_number }}
-        run: mvn jacoco:report coveralls:report --batch-mode --file pom.xml --no-transfer-progress -DrepoToken=${{ secrets.COVERALLS_TOKEN }}
+          
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          files: target/site/jacoco/jacoco.xml
+          flags: unittests
+          fail_ci_if_error: false
+          verbose: true
+
+
