@@ -50,10 +50,10 @@ jobs:
       - name: Test
         run: mvn test ${{ matrix.test-profile }} --batch-mode --file pom.xml
       - name: Generate coverage report
-        if: ${{ matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-latest' }}
+        if: ${{ matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-20.04' }}
         run: mvn jacoco:report --batch-mode --file pom.xml --no-transfer-progress
       - name: Upload coverage to Codecov
-        if: ${{ matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-latest' }}
+        if: ${{ matrix.test-profile == '' && matrix.java-version == '21' && matrix.platform == 'ubuntu-20.04' }}
         uses: codecov/codecov-action@v5
         with:
           use_oidc: true
