@@ -27,10 +27,13 @@ import org.hibernate.Interceptor;
 import org.hibernate.boot.Metadata;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
+import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleFactory;
+import org.openmrs.util.EnversAuditTableInitializer;
 import org.openmrs.util.OpenmrsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,6 +211,7 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory,
 			SessionFactoryServiceRegistry serviceRegistry) {
 		this.metadata = metadata;
+		generateEnversAuditTables(metadata, serviceRegistry);
 	}
 
 	@Override
@@ -220,5 +224,14 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	 */
 	public Metadata getMetadata() {
 		return metadata;
+	}
+
+	private void generateEnversAuditTables(Metadata metadata, ServiceRegistry serviceRegistry) {
+		try {
+			Properties hibernateProperties = getHibernateProperties();
+			EnversAuditTableInitializer.initialize(metadata, hibernateProperties, serviceRegistry);
+		} catch (Exception e) {
+			throw new APIException("An error occurred while initializing the Envers audit tables", e);
+		}
 	}
 }
